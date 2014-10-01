@@ -11,8 +11,7 @@ Usage
 - Use as OSL shader from script node.
 
 
-To do list:
------------
-
-	~~Sun still lights sky when below horizon. Need to track down why this is and fix it.~~ Fixed!
+To do list
+----------
+<del> Sun still lights sky when below horizon. Need to track down why this is and fix it. </del> Fixed!
 	
