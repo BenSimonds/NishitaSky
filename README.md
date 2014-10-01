@@ -14,5 +14,5 @@ Usage
 To do list:
 -----------
 
-	- ~~Sun still lights sky when below horizon. Need to track down why this is and fix it.~~ Fixed!
+	~~Sun still lights sky when below horizon. Need to track down why this is and fix it.~~ Fixed!
 	
