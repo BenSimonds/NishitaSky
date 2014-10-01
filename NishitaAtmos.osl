@@ -173,6 +173,7 @@ shader nishita_sky (
 		groundline_sample.max = lmax(Px, SunDirection, Re);
 
 		vector Ps = atmosphereline_sample.max;
+		int j = 0;
 		if (groundline_sample.has_solutions && groundline_sample.type == 0) {
 			//Light is below horizon from this point. No sample needed.
 			opticalDepthLR += 0;
@@ -180,31 +181,32 @@ shader nishita_sky (
 		} else {
 			float segmentLengthL = distance(Px, Ps) / numSamplesL;
 
-			for (int j = 0; j < numSamplesL; j++) {
+			for (j = 0; j < numSamplesL; j++) {
 				vector Pl = Px + segmentLengthL * SunDirection * (j + 0.5);
 				float sampleHeightL = length(Pl) - Re;
-				if (sampleHeightL > 0) {
-					// ignore sampleheights < 0 they're inside the planet...
-					float Hlr_sample = exp(-sampleHeightL/Hr)*segmentLengthL;
-					float Hlm_sample = exp(-sampleHeightL/Hm)*segmentLengthL;
+				if (sampleHeightL < 0) break;
+				// ignore sampleheights < 0 they're inside the planet...
+				float Hlr_sample = exp(-sampleHeightL/Hr)*segmentLengthL;
+				float Hlm_sample = exp(-sampleHeightL/Hm)*segmentLengthL;
 
-					opticalDepthLR += Hlr_sample;
-					opticalDepthLM += Hlm_sample;
-				}
+				opticalDepthLR += Hlr_sample;
+				opticalDepthLM += Hlm_sample;
 			}
 		}
 
 		// With our light samples done we can calculate the attenuation.
+		// Only include a sample if we reached j (so not if we hit the break clause for rays that hit the ground in finding the sun)
+		if (j == numSamplesL) {
+			vector tauR = BetaR * (opticalDepthR + opticalDepthLR);
+			vector tauM = BetaM * 1.1 * (opticalDepthM + opticalDepthLM);
+			vector tau = tauR + tauM;
+			vector attnR = vector (exp(-tauR[0]), exp(-tauR[1]), exp(-tauR[2]));
+			vector attnM = vector (exp(-tauM));
+			vector attenuation = vector (exp(-tau[0]), exp(-tau[1]), exp(-tau[2]));
 
-		vector tauR = BetaR * (opticalDepthR + opticalDepthLR);
-		vector tauM = BetaM * 1.1 * (opticalDepthM + opticalDepthLM);
-		vector tau = tauR + tauM;
-		vector attnR = vector (exp(-tauR[0]), exp(-tauR[1]), exp(-tauR[2]));
-		vector attnM = vector (exp(-tauM));
-		vector attenuation = vector (exp(-tau[0]), exp(-tau[1]), exp(-tau[2]));
-
-		SumR += Hr_sample * attenuation;
-		SumM += Hm_sample * attenuation; 
+			SumR += Hr_sample * attenuation;
+			SumM += Hm_sample * attenuation; 
+		}
 	}
 
 	Rayleigh = color (SumR * phaseR * BetaR) * Intensity;
