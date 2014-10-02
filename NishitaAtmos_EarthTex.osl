@@ -74,14 +74,25 @@ struct linesample {
 shader nishita_sky (
 	float Height = 1,
 	float Intensity = 20,
+
 	//float Hazyness = 0.5
 	//	[[float min = 0.0, float max = 2.0]],
-
-	vector SunVector = vector(0,0,1),
+	vector SunVector = vector (0,0,1),
 	vector Vector = P,
+
+	// Inputs for planet rotation.
+	vector EarthAxis = vector (0,0,0),
+	float EarthSpin = 0.0,
+	float OceanGlossyness = 25,
 	output color Rayleigh = 0.0,
 	output color Mie = 0.0,
-	output color Sky = 0.0)
+	output color Sky = 0.0,
+	output float Earth_Mask = 0.0,
+	output vector Earth_UV = vector(0),
+	output normal Earth_Normal = vector(0),
+	output color Earth_Transmittance  = color(0),
+	output color Earth_Specular = color(0)
+)
 
 {
 	//Variables:
@@ -110,6 +121,7 @@ shader nishita_sky (
 	//Stuff that will eventually help form my output.
 	vector SumR = vector(0);
 	vector SumM = vector(0);
+	vector SumE = vector(0);
 
 	//Set up start and end points for my integrals.
 	vector Pu = vector(0,0,0);
@@ -134,12 +146,28 @@ shader nishita_sky (
 
 		Pv = atmosphereline.max;
 		if (atmosphereline.has_solutions && atmosphereline.type == 0) {
-			//Line starts outside atmoshere, so Pu becomes Line.min
+			// Line starts outside atmoshere, so Pu becomes Line.min
 			Pu = atmosphereline.min;
 		}
 		if (groundline.has_solutions && groundline.type == 0) {
-			//Line hits ground, Pv becomes point at which line hits ground, which will be Line.min
+			// Line hits ground, Pv becomes point at which line hits ground, which will be Line.min
 			Pv = groundline.min;
+			Earth_Mask = 1;
+			// We also want to output UV coordinates for the earth.
+			point Pn = rotate (normalize (Pv), EarthSpin, - point(EarthAxis), point (EarthAxis));
+			float theta = atan(Pn[1]/Pn[0]);
+			float phi = acos(Pn[2]);
+			// Work out lat long coords:
+			float longitude = - theta /(2 * M_PI) + 0.5;
+			float latitude = phi / M_PI;
+			Earth_UV = vector (longitude, latitude, 0);
+			Earth_Normal = normalize(Pv);
+			// We could try and do specular shading here as well.
+			vector R = reflect (SunDirection,Earth_Normal);
+			float ks = 0.1;
+			float shininess = OceanGlossyness;
+			float specular = ks * pow(dot(R, Direction), shininess);
+			Earth_Specular = color (specular);
 		}
 	}
 
@@ -210,12 +238,17 @@ shader nishita_sky (
 			vector attnM = vector (exp(-tauM));
 			vector attenuation = vector (exp(-tau[0]), exp(-tau[1]), exp(-tau[2]));
 
+			vector tauE = BetaR * opticalDepthR + BetaM * 1.1 * opticalDepthM;
+			vector attnE = vector (exp(-tauE[0]), exp(-tauE[1]), exp(-tauE[2]));
+
 			SumR += Hr_sample * attenuation;
-			SumM += Hm_sample * attenuation; 
+			SumM += Hm_sample * attenuation;
+			SumE += attnE * (Hr_sample + Hm_sample);
 		}
 	}
 
 	Rayleigh = color (SumR * phaseR * BetaR) * Intensity;
 	Mie = color (SumM * phaseM * BetaM) * Intensity;
 	Sky =  Rayleigh + Mie;
+	Earth_Transmittance = color(SumE[0],SumE[1],SumE[2]); 
 }
