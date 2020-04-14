@@ -3,7 +3,7 @@
 About
 ------
 
-NishitaAtmos.osl is an osl shader for rendering a sky based on Nishita's paper in 1993 entitled "Display of the Earth Taking into account Atmospheric Scattering". It's mostly written based on the following article: http://www.scratchapixel.com/lessons/3d-advanced-lessons/simulating-the-colors-of-the-sky/atmospheric-scattering/
+NishitaAtmos.osl is an osl shader for rendering a sky based on Nishita's paper in 1993 entitled "Display of the Earth Taking into account Atmospheric Scattering". It's mostly written based on the following article: https://www.scratchapixel.com/lessons/procedural-generation-virtual-worlds/simulating-sky
 
 For some example renders, see: http://bensimonds.com/2014/10/02/atmospheric-rendering-with-osl/
 
